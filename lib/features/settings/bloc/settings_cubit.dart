@@ -7,7 +7,11 @@ part 'settings_state.dart';
 class SettingsCubit extends Cubit<SettingsState> {
   SettingsCubit(this._prefs)
     : super(
-        SettingsState(soundOn: _prefs.soundOn, hapticsOn: _prefs.hapticsOn),
+        SettingsState(
+          soundOn: _prefs.soundOn,
+          hapticsOn: _prefs.hapticsOn,
+          reduceMotion: _prefs.reduceMotion,
+        ),
       );
 
   final PrefsRepository _prefs;
@@ -22,5 +26,11 @@ class SettingsCubit extends Cubit<SettingsState> {
     final next = !state.hapticsOn;
     emit(state.copyWith(hapticsOn: next));
     await _prefs.setHapticsOn(next);
+  }
+
+  Future<void> toggleReduceMotion() async {
+    final next = !state.reduceMotion;
+    emit(state.copyWith(reduceMotion: next));
+    await _prefs.setReduceMotion(next);
   }
 }

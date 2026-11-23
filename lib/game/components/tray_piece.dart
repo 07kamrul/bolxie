@@ -17,7 +17,8 @@ class TrayPiece extends PositionComponent
 
   static const double _followRate = 28;
   static const double _scaleRate = 18;
-  static const double _hitPadding = 18;
+  static const double _hitPaddingCells = 0.45;
+  static const double _dimAlpha = 0.4;
 
   ShapeDef? _shape;
   double _cx = 0;
@@ -30,6 +31,23 @@ class TrayPiece extends PositionComponent
   int _snapRow = -1;
   int _snapCol = -1;
   bool _hasSnap = false;
+
+  final Paint _dimPaint = Paint()
+    ..color = const Color.fromRGBO(255, 255, 255, _dimAlpha);
+  Object? _fitBoard;
+  ShapeDef? _fitShape;
+  bool _fitResult = true;
+
+  /// Cached per (board, shape): board states are immutable so identity works.
+  bool _fits(ShapeDef shape) {
+    final board = game.session.state.board;
+    if (!identical(board, _fitBoard) || !identical(shape, _fitShape)) {
+      _fitBoard = board;
+      _fitShape = shape;
+      _fitResult = Placement.anyFit(board, shape);
+    }
+    return _fitResult;
+  }
 
   ShapeDef? get _current => game.session.state.tray[slot];
 
@@ -44,11 +62,9 @@ class TrayPiece extends PositionComponent
   bool containsLocalPoint(Vector2 point) {
     if (_current == null || !game.isInteractive) return false;
     final l = game.layout;
-    final left = slot * l.slotWidth;
-    return point.x >= left &&
-        point.x <= left + l.slotWidth &&
-        point.y >= l.trayTop - _hitPadding &&
-        point.y <= l.trayTop + l.trayHeight + _hitPadding;
+    return l
+        .slotHitRect(slot, l.cell * _hitPaddingCells)
+        .contains(Offset(point.x, point.y));
   }
 
   @override
@@ -138,12 +154,12 @@ class TrayPiece extends PositionComponent
       // New piece dealt (or restored by undo): pop in at the slot.
       _shape = shape;
       _cx = l.slotCenterX(slot);
-      _cy = l.slotCenterY;
+      _cy = l.slotCenterY(slot);
       _scale = 0;
       _dragging = false;
     }
     final targetX = _dragging ? _targetCenterX : l.slotCenterX(slot);
-    final targetY = _dragging ? _targetCenterY(shape) : l.slotCenterY;
+    final targetY = _dragging ? _targetCenterY(shape) : l.slotCenterY(slot);
     final targetScale = _dragging ? 1.0 : l.trayScale;
     final follow = (dt * _followRate).clamp(0.0, 1.0);
     final grow = (dt * _scaleRate).clamp(0.0, 1.0);
@@ -156,6 +172,13 @@ class TrayPiece extends PositionComponent
   void render(Canvas canvas) {
     final shape = _current;
     if (shape == null || _scale <= 0.01) return;
+    if (_dragging || _fits(shape)) {
+      game.painter.drawShape(canvas, shape, _cx, _cy, _scale);
+      return;
+    }
+    // Pieces with no legal spot are dimmed so the player sees why.
+    canvas.saveLayer(null, _dimPaint);
     game.painter.drawShape(canvas, shape, _cx, _cy, _scale);
+    canvas.restore();
   }
 }

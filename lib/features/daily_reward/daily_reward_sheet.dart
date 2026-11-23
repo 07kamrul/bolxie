@@ -9,6 +9,7 @@ Future<void> showDailyRewardSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    constraints: const BoxConstraints(maxWidth: 560),
     builder: (_) => BlocProvider.value(
       value: context.read<DailyRewardCubit>(),
       child: const _DailyRewardSheet(),
@@ -22,7 +23,7 @@ class _DailyRewardSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: BlocBuilder<DailyRewardCubit, DailyRewardState>(
           builder: (context, state) {

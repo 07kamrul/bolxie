@@ -27,6 +27,9 @@ class ParticleSystem extends Component {
           c.withValues(alpha: (b + 1) / _alphaBuckets),
       ],
   ];
+
+  /// Layout scale (1.0 = 40px cell); keeps motion proportional to the board.
+  double unit = 1;
   int _next = 0;
   int _alive = 0;
 
@@ -34,12 +37,12 @@ class ParticleSystem extends Component {
     for (var n = 0; n < count; n++) {
       final base = _next * _stride;
       final angle = _random.nextDouble() * pi * 2;
-      final speed = 90 + _random.nextDouble() * 220;
+      final speed = (90 + _random.nextDouble() * 220) * unit;
       final life = 0.35 + _random.nextDouble() * 0.35;
       _data[base] = x;
       _data[base + 1] = y;
       _data[base + 2] = cos(angle) * speed;
-      _data[base + 3] = sin(angle) * speed - 80;
+      _data[base + 3] = sin(angle) * speed - 80 * unit;
       _data[base + 4] = life;
       _data[base + 5] = life;
       _data[base + 6] = colorIndex.toDouble();
@@ -57,7 +60,7 @@ class ParticleSystem extends Component {
       final life = _data[b + 4];
       if (life <= 0) continue;
       _data[b + 4] = life - dt;
-      _data[b + 3] += _gravity * dt;
+      _data[b + 3] += _gravity * unit * dt;
       _data[b] += _data[b + 2] * dt;
       _data[b + 1] += _data[b + 3] * dt;
       any = true;
@@ -76,7 +79,11 @@ class ParticleSystem extends Component {
       final bucket = (t * _alphaBuckets).ceil().clamp(1, _alphaBuckets) - 1;
       final colors = _bucketColors[_data[b + 6].toInt() % _bucketColors.length];
       _paint.color = colors[bucket];
-      canvas.drawCircle(Offset(_data[b], _data[b + 1]), 2 + 4 * t, _paint);
+      canvas.drawCircle(
+        Offset(_data[b], _data[b + 1]),
+        (2 + 4 * t) * unit,
+        _paint,
+      );
     }
   }
 }

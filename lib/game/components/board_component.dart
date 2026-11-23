@@ -34,6 +34,8 @@ class BoardComponent extends Component {
   final Int8List _clearColor = Int8List(_n);
 
   late final Paint _panelPaint = Paint()..color = skin.boardColor;
+  Picture? _gridPicture;
+  bool _isAnimating = false;
   late final Paint _glowPaint = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 4;
@@ -57,6 +59,29 @@ class BoardComponent extends Component {
       ),
       Radius.circular(layout.cell * 0.35),
     );
+    _rebuildGridPicture();
+  }
+
+  /// Panel and empty cells never change between relayouts, so they are
+  /// recorded once and replayed as a single draw call.
+  void _rebuildGridPicture() {
+    _gridPicture?.dispose();
+    final recorder = PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.drawRRect(_panel, _panelPaint);
+    for (var r = 0; r < _cols; r++) {
+      for (var c = 0; c < _cols; c++) {
+        painter.drawEmpty(canvas, _layout.cellX(c), _layout.cellY(r));
+      }
+    }
+    _gridPicture = recorder.endRecording();
+  }
+
+  @override
+  void onRemove() {
+    _gridPicture?.dispose();
+    _gridPicture = null;
+    super.onRemove();
   }
 
   void setGhost(ShapeDef? shape, int row, int col) {
@@ -74,6 +99,7 @@ class BoardComponent extends Component {
           1;
     }
     _glow = 1;
+    _isAnimating = true;
   }
 
   void onCleared(List<int> indices, List<int> colorValues) {
@@ -83,32 +109,45 @@ class BoardComponent extends Component {
       _clearColor[i] = (colorValues[k] - 1).clamp(0, 127);
       _bounce[i] = 0;
     }
+    _isAnimating = true;
   }
 
   void resetAnimations() {
     _bounce.fillRange(0, _n, 0);
     _clearing.fillRange(0, _n, 0);
     _glow = 0;
+    _isAnimating = false;
     _ghostShape = null;
   }
 
   @override
   void update(double dt) {
+    if (!_isAnimating) return;
     final bounceStep = dt / GameConstants.placeBounceSeconds;
     final clearStep = dt / GameConstants.clearAnimSeconds;
+    var any = _glow > 0;
     for (var i = 0; i < _n; i++) {
-      if (_bounce[i] > 0)
+      if (_bounce[i] > 0) {
         _bounce[i] = (_bounce[i] - bounceStep).clamp(0.0, 1.0);
-      if (_clearing[i] > 0)
+        any = any || _bounce[i] > 0;
+      }
+      if (_clearing[i] > 0) {
         _clearing[i] = (_clearing[i] - clearStep).clamp(0.0, 1.0);
+        any = any || _clearing[i] > 0;
+      }
     }
-    if (_glow > 0) _glow = (_glow - dt * 2.5).clamp(0.0, 1.0);
+    if (_glow > 0) {
+      _glow = (_glow - dt * 2.5).clamp(0.0, 1.0);
+      any = any || _glow > 0;
+    }
+    _isAnimating = any;
   }
 
   @override
   void render(Canvas canvas) {
     final l = _layout;
-    canvas.drawRRect(_panel, _panelPaint);
+    final grid = _gridPicture;
+    if (grid != null) canvas.drawPicture(grid);
     if (_glow > 0) {
       _glowPaint.color = skin.accent.withValues(alpha: 0.7 * _glow);
       canvas.drawRRect(_panel, _glowPaint);
@@ -120,10 +159,7 @@ class BoardComponent extends Component {
         final y = l.cellY(r);
         final i = r * _cols + c;
         final value = board.at(r, c);
-        if (value == 0) {
-          painter.drawEmpty(canvas, x, y);
-        } else {
-          painter.drawEmpty(canvas, x, y);
+        if (value != 0) {
           final b = _bounce[i];
           // sin gives a quick overshoot-and-settle pop.
           final scale = b > 0 ? 1 + 0.18 * _sinPop(b) : 1.0;

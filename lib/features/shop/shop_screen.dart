@@ -2,6 +2,7 @@ import 'package:bloxie/core/constants/economy_constants.dart';
 import 'package:bloxie/core/services/service_locator.dart';
 import 'package:bloxie/core/theme/skins.dart';
 import 'package:bloxie/features/common/coin_chip.dart';
+import 'package:bloxie/features/common/constrained_content.dart';
 import 'package:bloxie/features/common/gradient_scaffold.dart';
 import 'package:bloxie/features/common/snack.dart';
 import 'package:bloxie/features/shop/bloc/shop_cubit.dart';
@@ -51,28 +52,30 @@ class _ShopScreenState extends State<ShopScreen> {
         actions: const [CoinChip(), SizedBox(width: 16)],
       ),
       body: BlocBuilder<ShopCubit, ShopState>(
-        builder: (context, shop) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            OutlinedButton.icon(
-              onPressed: _isWatching ? null : _watchForCoins,
-              icon: const Icon(Icons.play_circle_outline),
-              label: Text(
-                'Watch ad: +${EconomyConstants.rewardedCoinAmount} coins',
+        builder: (context, shop) => ConstrainedContent(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              OutlinedButton.icon(
+                onPressed: _isWatching ? null : _watchForCoins,
+                icon: const Icon(Icons.play_circle_outline),
+                label: Text(
+                  'Watch ad: +${EconomyConstants.rewardedCoinAmount} coins',
+                ),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                ),
               ),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-              ),
-            ),
-            const SizedBox(height: 16),
-            for (final skin in Skins.all)
-              ThemeCard(
-                skin: skin,
-                isSelected: shop.selectedId == skin.id,
-                isUnlocked: shop.unlocked.contains(skin.id),
-                onTap: () => _onTap(skin.id),
-              ),
-          ],
+              const SizedBox(height: 16),
+              for (final skin in Skins.all)
+                ThemeCard(
+                  skin: skin,
+                  isSelected: shop.selectedId == skin.id,
+                  isUnlocked: shop.unlocked.contains(skin.id),
+                  onTap: () => _onTap(skin.id),
+                ),
+            ],
+          ),
         ),
       ),
     );

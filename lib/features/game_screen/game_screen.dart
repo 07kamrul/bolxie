@@ -7,6 +7,8 @@ import 'package:bloxie/features/common/snack.dart';
 import 'package:bloxie/features/game_screen/game_hud.dart';
 import 'package:bloxie/features/game_screen/game_over_overlay.dart';
 import 'package:bloxie/features/game_screen/pause_overlay.dart';
+import 'package:bloxie/features/game_screen/tutorial_overlay.dart';
+import 'package:bloxie/features/settings/bloc/settings_cubit.dart';
 import 'package:bloxie/features/shop/bloc/shop_cubit.dart';
 import 'package:bloxie/features/stats/bloc/stats_cubit.dart';
 import 'package:bloxie/features/wallet/bloc/wallet_cubit.dart';
@@ -16,6 +18,7 @@ import 'package:bloxie/services/ads/ad_service.dart';
 import 'package:bloxie/services/analytics/analytics_service.dart';
 import 'package:bloxie/services/audio/audio_service.dart';
 import 'package:bloxie/services/audio/haptics_service.dart';
+import 'package:bloxie/services/storage/prefs_repository.dart';
 import 'package:flame/game.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -26,7 +29,7 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final BlockGame _game;
   late int _bestAtStart;
   late DateTime _startedAt;
@@ -35,6 +38,7 @@ class _GameScreenState extends State<GameScreen> {
   bool _isPaused = false;
   bool _isBusy = false;
   bool _isFinalized = false;
+  bool _showTutorial = false;
 
   @override
   void initState() {
@@ -45,8 +49,28 @@ class _GameScreenState extends State<GameScreen> {
       audio: sl<AudioService>(),
       haptics: sl<HapticsService>(),
       onGameOver: _handleGameOver,
+      reduceMotion: sl<SettingsCubit>().state.reduceMotion,
     );
+    _showTutorial = !sl<PrefsRepository>().tutorialSeen;
+    WidgetsBinding.instance.addObserver(this);
     _beginRun();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Never let the game run (or a timer tick) while the app is hidden.
+    final isHidden =
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden;
+    if (isHidden && !_isPaused && _over == null && !_isBusy && !_showTutorial) {
+      _pause();
+    }
+  }
+
+  void _dismissTutorial() {
+    unawaited(sl<PrefsRepository>().setTutorialSeen(true));
+    setState(() => _showTutorial = false);
   }
 
   void _beginRun() {
@@ -58,6 +82,7 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // Leaving while the game-over overlay is up still counts the game.
     if (_over != null) unawaited(_finalize());
     super.dispose();
@@ -188,9 +213,17 @@ class _GameScreenState extends State<GameScreen> {
                       onPause: _pause,
                       onUndo: _undo,
                     ),
-                    Expanded(child: GameWidget<BlockGame>(game: _game)),
+                    Expanded(
+                      child: RepaintBoundary(
+                        child: GameWidget<BlockGame>(game: _game),
+                      ),
+                    ),
                   ],
                 ),
+                if (_showTutorial)
+                  Positioned.fill(
+                    child: TutorialOverlay(onDone: _dismissTutorial),
+                  ),
                 if (_isPaused)
                   Positioned.fill(
                     child: PauseOverlay(

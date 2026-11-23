@@ -29,6 +29,7 @@ class BlockGame extends FlameGame {
     required this.audio,
     required this.haptics,
     this.onGameOver,
+    this.reduceMotion = false,
     Spawner? spawner,
   }) : session = GameSession(spawner: spawner ?? Spawner());
 
@@ -36,6 +37,9 @@ class BlockGame extends FlameGame {
   final AudioService audio;
   final HapticsService haptics;
   final GameSession session;
+
+  /// Skips screen shake and thins particle bursts.
+  final bool reduceMotion;
 
   /// Called once per game over, after the final clear animation has played.
   void Function(GameState state)? onGameOver;
@@ -59,6 +63,8 @@ class BlockGame extends FlameGame {
   double _gameOverCountdown = -1;
   double _shakeLeft = 0;
   double _shakeAmplitude = 0;
+
+  int get _particleCount => reduceMotion ? 1 : GameConstants.particlesPerCell;
 
   bool get isInteractive =>
       !_userPaused && _gameOverCountdown < 0 && !session.state.isGameOver;
@@ -92,6 +98,8 @@ class BlockGame extends FlameGame {
     layout = GameLayout(size.x, size.y);
     painter = BlockPainter(cell: layout.cell, skin: skin);
     _board?.relayout(layout, painter);
+    _particles.unit = layout.unit;
+    _popups.unit = layout.unit;
     super.onGameResize(size);
   }
 
@@ -132,7 +140,7 @@ class BlockGame extends FlameGame {
         layout.cellX(i % GameConstants.gridSize) + layout.cell / 2,
         layout.cellY(i ~/ GameConstants.gridSize) + layout.cell / 2,
         colors[k] - 1,
-        count: GameConstants.particlesPerCell,
+        count: _particleCount,
       );
     }
 
@@ -147,6 +155,7 @@ class BlockGame extends FlameGame {
       if (lines >= 2) _shake(_smallShakeAmplitude);
     }
 
+    final u = layout.unit;
     final cx = layout.boardCenterX;
     final cy = layout.boardCenterY;
     final title = switch (lines) {
@@ -156,21 +165,36 @@ class BlockGame extends FlameGame {
       _ => 'AMAZING!',
     };
     if (title != null) {
-      _popups.show(title, cx, cy - 40, color: skin.palette[1], size: 40);
+      _popups.show(
+        title,
+        cx,
+        cy - 40 * u,
+        color: skin.palette[1],
+        size: 40 * _fontScale,
+      );
     }
     if (outcome.score.combo >= 2) {
       _popups.show(
         'COMBO x${outcome.score.combo}',
         cx,
-        cy + 10,
+        cy + 10 * u,
         color: skin.accent,
+        size: 34 * _fontScale,
       );
     }
-    _popups.show('+${outcome.score.points}', cx, cy + 60, size: 28);
+    _popups.show(
+      '+${outcome.score.points}',
+      cx,
+      cy + 60 * u,
+      size: 28 * _fontScale,
+    );
   }
 
+  double get _fontScale => layout.unit.clamp(0.7, 1.6);
+
   void _shake(double amplitude) {
-    _shakeAmplitude = amplitude;
+    if (reduceMotion) return;
+    _shakeAmplitude = amplitude * layout.unit;
     _shakeLeft = GameConstants.shakeSeconds;
   }
 
@@ -199,7 +223,7 @@ class BlockGame extends FlameGame {
             layout.cellX(c) + layout.cell / 2,
             layout.cellY(r) + layout.cell / 2,
             before.at(r, c) - 1,
-            count: GameConstants.particlesPerCell,
+            count: _particleCount,
           );
         }
       }

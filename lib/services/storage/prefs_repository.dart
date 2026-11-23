@@ -12,6 +12,8 @@ class PrefsRepository {
   static const _coins = 'coins';
   static const _sound = 'sound_on';
   static const _haptics = 'haptics_on';
+  static const _reduceMotion = 'reduce_motion';
+  static const _tutorialSeen = 'tutorial_seen';
   static const _adsRemoved = 'ads_removed';
   static const _selectedSkin = 'selected_skin';
   static const _unlockedSkins = 'unlocked_skins';
@@ -31,6 +33,12 @@ class PrefsRepository {
 
   bool get hapticsOn => _prefs.getBool(_haptics) ?? true;
   Future<void> setHapticsOn(bool v) => _prefs.setBool(_haptics, v);
+
+  bool get reduceMotion => _prefs.getBool(_reduceMotion) ?? false;
+  Future<void> setReduceMotion(bool v) => _prefs.setBool(_reduceMotion, v);
+
+  bool get tutorialSeen => _prefs.getBool(_tutorialSeen) ?? false;
+  Future<void> setTutorialSeen(bool v) => _prefs.setBool(_tutorialSeen, v);
 
   bool get adsRemoved => _prefs.getBool(_adsRemoved) ?? false;
   Future<void> setAdsRemoved(bool v) => _prefs.setBool(_adsRemoved, v);

@@ -1,20 +1,12 @@
-import 'dart:ui';
-
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 
-/// Routes framework and async errors to Crashlytics when Firebase is ready,
-/// and to the console otherwise.
+/// Keeps errors on-device: they are printed to the console and never sent
+/// anywhere, since the app has no backend.
 abstract final class CrashReporter {
-  static void install({required bool isFirebaseReady}) {
-    if (!isFirebaseReady) {
-      FlutterError.onError = FlutterError.presentError;
-      return;
-    }
-    final crashlytics = FirebaseCrashlytics.instance;
-    FlutterError.onError = crashlytics.recordFlutterFatalError;
+  static void install() {
+    FlutterError.onError = FlutterError.presentError;
     PlatformDispatcher.instance.onError = (error, stack) {
-      crashlytics.recordError(error, stack, fatal: true);
+      debugPrint('Unhandled error: $error\n$stack');
       return true;
     };
   }

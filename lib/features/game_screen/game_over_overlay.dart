@@ -1,3 +1,4 @@
+import 'package:bloxie/features/common/constrained_content.dart';
 import 'package:material_ui/material_ui.dart';
 
 class GameOverOverlay extends StatelessWidget {
@@ -28,7 +29,7 @@ class GameOverOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: Colors.black.withValues(alpha: 0.78),
-      child: Center(
+      child: ScrollableCenter(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -37,9 +38,20 @@ class GameOverOverlay extends StatelessWidget {
               style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
-            Text(
-              '$score',
-              style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w900),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: TweenAnimationBuilder<int>(
+                tween: IntTween(begin: 0, end: score),
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeOutCubic,
+                builder: (_, v, __) => Text(
+                  '$v',
+                  style: const TextStyle(
+                    fontSize: 64,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
             ),
             Text(
               'BEST $bestScore',

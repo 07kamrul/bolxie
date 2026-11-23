@@ -1,3 +1,4 @@
+import 'package:bloxie/features/common/constrained_content.dart';
 import 'package:bloxie/features/common/gradient_scaffold.dart';
 import 'package:bloxie/features/stats/bloc/stats_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,25 +12,27 @@ class StatsScreen extends StatelessWidget {
     return GradientScaffold(
       appBar: AppBar(title: const Text('Stats')),
       body: BlocBuilder<StatsCubit, StatsState>(
-        builder: (context, s) => ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            _StatCard(
-              icon: Icons.sports_esports,
-              label: 'Games played',
-              value: '${s.gamesPlayed}',
-            ),
-            _StatCard(
-              icon: Icons.emoji_events,
-              label: 'Best score',
-              value: '${s.bestScore}',
-            ),
-            _StatCard(
-              icon: Icons.view_week_rounded,
-              label: 'Lines cleared',
-              value: '${s.totalLines}',
-            ),
-          ],
+        builder: (context, s) => ConstrainedContent(
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              _StatCard(
+                icon: Icons.sports_esports,
+                label: 'Games played',
+                value: '${s.gamesPlayed}',
+              ),
+              _StatCard(
+                icon: Icons.emoji_events,
+                label: 'Best score',
+                value: '${s.bestScore}',
+              ),
+              _StatCard(
+                icon: Icons.view_week_rounded,
+                label: 'Lines cleared',
+                value: '${s.totalLines}',
+              ),
+            ],
+          ),
         ),
       ),
     );

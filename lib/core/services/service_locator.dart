@@ -12,7 +12,6 @@ import 'package:bloxie/services/audio/audio_service.dart';
 import 'package:bloxie/services/audio/haptics_service.dart';
 import 'package:bloxie/services/iap/iap_service.dart';
 import 'package:bloxie/services/storage/prefs_repository.dart';
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,11 +20,9 @@ final GetIt sl = GetIt.instance;
 bool get _isMobile => Platform.isAndroid || Platform.isIOS;
 
 /// Wires up services and app-level cubits. Call once at startup.
-Future<void> setupServices({required bool isFirebaseReady}) async {
+Future<void> setupServices() async {
   final prefs = PrefsRepository(await SharedPreferences.getInstance());
-  final AnalyticsService analytics = isFirebaseReady
-      ? FirebaseAnalyticsService(FirebaseAnalytics.instance)
-      : const NoopAnalyticsService();
+  const AnalyticsService analytics = NoopAnalyticsService();
 
   final settings = SettingsCubit(prefs);
   final wallet = WalletCubit(prefs);

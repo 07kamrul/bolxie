@@ -1,4 +1,5 @@
 import 'package:bloxie/core/services/service_locator.dart';
+import 'package:bloxie/core/theme/breakpoints.dart';
 import 'package:bloxie/features/common/coin_chip.dart';
 import 'package:bloxie/features/common/gradient_scaffold.dart';
 import 'package:bloxie/features/daily_reward/bloc/daily_reward_cubit.dart';
@@ -45,74 +46,146 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final best = context.select<StatsCubit, int>((c) => c.state.bestScore);
     return GradientScaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Align(alignment: Alignment.centerRight, child: CoinChip()),
-            const Spacer(flex: 2),
-            ShaderMask(
-              shaderCallback: (r) => const LinearGradient(
-                colors: [
-                  Color(0xFFFF5C8A),
-                  Color(0xFFFFB84D),
-                  Color(0xFF4DB8FF),
-                ],
-              ).createShader(r),
-              child: const Text(
-                'BLOXIE',
-                style: TextStyle(
-                  fontSize: 64,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 4,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'BEST  $best',
-              style: const TextStyle(fontSize: 18, letterSpacing: 2),
-            ),
-            const Spacer(),
-            FilledButton.icon(
-              onPressed: () => _push(const GameScreen()),
-              icon: const Icon(Icons.play_arrow_rounded, size: 30),
-              label: const Text('PLAY'),
-            ),
-            const SizedBox(height: 28),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final size = constraints.biggest;
+          final isWide = Breakpoints.isWide(size);
+          final isCompact = Breakpoints.isCompactHeight(size) && !isWide;
+          final title = _Title(best: best, isCompact: isCompact || isWide);
+          final menu = _Menu(
+            onPlay: () => _push(const GameScreen()),
+            onPush: _push,
+          );
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                BlocBuilder<DailyRewardCubit, DailyRewardState>(
-                  builder: (context, s) => _RoundButton(
-                    icon: Icons.card_giftcard,
-                    label: 'Daily',
-                    showBadge: s.canClaim,
-                    onTap: () => showDailyRewardSheet(context),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: CoinChip(),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight - 80,
+                        maxWidth: isWide ? 900 : 480,
+                      ),
+                      child: Center(
+                        child: isWide
+                            ? Row(
+                                children: [
+                                  Expanded(child: Center(child: title)),
+                                  Expanded(child: Center(child: menu)),
+                                ],
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  title,
+                                  SizedBox(height: isCompact ? 16 : 48),
+                                  menu,
+                                ],
+                              ),
+                      ),
+                    ),
                   ),
-                ),
-                _RoundButton(
-                  icon: Icons.palette,
-                  label: 'Themes',
-                  onTap: () => _push(const ShopScreen()),
-                ),
-                _RoundButton(
-                  icon: Icons.bar_chart_rounded,
-                  label: 'Stats',
-                  onTap: () => _push(const StatsScreen()),
-                ),
-                _RoundButton(
-                  icon: Icons.settings,
-                  label: 'Settings',
-                  onTap: () => _push(const SettingsScreen()),
                 ),
               ],
             ),
-            const Spacer(flex: 2),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _Title extends StatelessWidget {
+  const _Title({required this.best, required this.isCompact});
+
+  final int best;
+  final bool isCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ShaderMask(
+          shaderCallback: (r) => const LinearGradient(
+            colors: [Color(0xFFFF5C8A), Color(0xFFFFB84D), Color(0xFF4DB8FF)],
+          ).createShader(r),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              'BLOXIE',
+              style: TextStyle(
+                fontSize: isCompact ? 44 : 64,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 4,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'BEST  $best',
+          style: const TextStyle(fontSize: 18, letterSpacing: 2),
+        ),
+      ],
+    );
+  }
+}
+
+class _Menu extends StatelessWidget {
+  const _Menu({required this.onPlay, required this.onPush});
+
+  final VoidCallback onPlay;
+  final void Function(Widget screen) onPush;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FilledButton.icon(
+          onPressed: onPlay,
+          icon: const Icon(Icons.play_arrow_rounded, size: 30),
+          label: const Text('PLAY'),
+        ),
+        const SizedBox(height: 28),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 20,
+          runSpacing: 16,
+          children: [
+            BlocBuilder<DailyRewardCubit, DailyRewardState>(
+              builder: (context, s) => _RoundButton(
+                icon: Icons.card_giftcard,
+                label: 'Daily',
+                showBadge: s.canClaim,
+                onTap: () => showDailyRewardSheet(context),
+              ),
+            ),
+            _RoundButton(
+              icon: Icons.palette,
+              label: 'Themes',
+              onTap: () => onPush(const ShopScreen()),
+            ),
+            _RoundButton(
+              icon: Icons.bar_chart_rounded,
+              label: 'Stats',
+              onTap: () => onPush(const StatsScreen()),
+            ),
+            _RoundButton(
+              icon: Icons.settings,
+              label: 'Settings',
+              onTap: () => onPush(const SettingsScreen()),
+            ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

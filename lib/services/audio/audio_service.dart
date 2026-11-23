@@ -15,10 +15,15 @@ class AudioService {
 
   final bool Function() _isEnabled;
   bool _ready = false;
+  final Map<String, AudioPool> _pools = {};
 
   Future<void> preload() async {
     try {
       await FlameAudio.audioCache.loadAll(Sfx.all);
+      // Pools reuse players, avoiding per-play player creation latency.
+      for (final file in Sfx.all) {
+        _pools[file] = await FlameAudio.createPool(file, maxPlayers: 4);
+      }
       _ready = true;
     } on Object catch (e) {
       debugPrint('audio preload failed: $e');
@@ -28,7 +33,12 @@ class AudioService {
   Future<void> play(String file) async {
     if (!_ready || !_isEnabled()) return;
     try {
-      await FlameAudio.play(file);
+      final pool = _pools[file];
+      if (pool != null) {
+        await pool.start();
+      } else {
+        await FlameAudio.play(file);
+      }
     } on Object catch (e) {
       debugPrint('audio "$file" failed: $e');
     }

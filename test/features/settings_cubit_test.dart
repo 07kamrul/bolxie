@@ -31,4 +31,14 @@ void main() {
     expect: () => [const SettingsState(soundOn: true, hapticsOn: false)],
     verify: (_) => expect(prefs.hapticsOn, isFalse),
   );
+
+  blocTest<SettingsCubit, SettingsState>(
+    'toggleReduceMotion flips and persists',
+    build: () => SettingsCubit(prefs),
+    act: (c) => c.toggleReduceMotion(),
+    expect: () => [
+      const SettingsState(soundOn: true, hapticsOn: true, reduceMotion: true),
+    ],
+    verify: (_) => expect(prefs.reduceMotion, isTrue),
+  );
 }

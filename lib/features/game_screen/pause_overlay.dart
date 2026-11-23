@@ -1,3 +1,4 @@
+import 'package:bloxie/features/common/constrained_content.dart';
 import 'package:bloxie/features/settings/bloc/settings_cubit.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
@@ -18,7 +19,7 @@ class PauseOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: Colors.black.withValues(alpha: 0.7),
-      child: Center(
+      child: ScrollableCenter(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

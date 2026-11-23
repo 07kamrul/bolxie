@@ -16,8 +16,8 @@ Drag pieces onto the grid, clear rows and columns, and chain clears for combos.
 - **Remove Ads** one-time purchase with Restore. Rewarded ads stay available.
 - 7-day daily reward streak, 5 themes (1 free and 4 bought with coins),
   and a stats screen.
-- Firebase Analytics and Crashlytics. The app runs without them if Firebase
-  is not configured.
+- No backend: all data (scores, coins, themes, settings) is stored on the
+  device with `shared_preferences`. No analytics or crash-reporting service.
 
 ## Project layout
 
@@ -44,19 +44,6 @@ flutter test           # unit tests
 flutter test --coverage
 flutter analyze
 ```
-
-### Firebase (optional for development, needed for analytics)
-
-```bash
-dart pub global activate flutterfire_cli
-flutterfire configure    # creates google-services.json / GoogleService-Info.plist
-```
-
-If `flutterfire configure` also generates `lib/firebase_options.dart`, change
-the call in `lib/bootstrap.dart` to
-`Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)`.
-For Crashlytics on Android, also add the Google Services and Crashlytics
-Gradle plugins, as described in the FlutterFire docs.
 
 ### Sounds
 
@@ -102,12 +89,8 @@ Replace them with your own files under the same names, or regenerate them with
 - [ ] Create the managed product `remove_ads` (non-consumable) in Play Console → Monetize.
 - [ ] Add license testers, then test buy and restore on the internal testing track.
 
-**Firebase**
-- [ ] Run `flutterfire configure`, then confirm events show up in DebugView.
-- [ ] Trigger a test crash and check that it appears in Crashlytics.
-
 **Store listing and policy**
-- [ ] Data safety form: device/advertising ID, app interactions, and crash logs, all shared with Google (AdMob/Firebase).
+- [ ] Data safety form: device/advertising ID, shared with Google (AdMob). The app itself collects nothing.
 - [ ] Declare "Contains ads", complete the content rating questionnaire, and choose the target audience (not "children" if using personalized ads).
 - [ ] Publish a privacy policy URL.
 - [ ] Prepare screenshots (phone and 7"/10" tablet), the feature graphic (1024×500) and short and long descriptions.

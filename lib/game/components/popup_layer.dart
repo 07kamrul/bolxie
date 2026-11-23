@@ -20,6 +20,7 @@ class PopupLayer extends Component {
   static const int _slots = 4;
   final List<_Popup> _popups = List.generate(_slots, (_) => _Popup());
   final Paint _layerPaint = Paint();
+  double unit = 1;
   int _next = 0;
 
   void show(
@@ -70,7 +71,7 @@ class PopupLayer extends Component {
       final t = p.age / GameConstants.comboPopupSeconds;
       final pop = t < 0.15 ? 0.6 + (t / 0.15) * 0.5 : 1.1 - (t - 0.15) * 0.12;
       final alpha = t < 0.6 ? 1.0 : (1 - (t - 0.6) / 0.4).clamp(0.0, 1.0);
-      final rise = -60 * t;
+      final rise = -60 * unit * t;
       _layerPaint.color = Color.fromRGBO(255, 255, 255, alpha);
       canvas.saveLayer(null, _layerPaint);
       canvas.translate(p.x, p.y + rise);
