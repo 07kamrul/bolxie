@@ -8,11 +8,15 @@ import 'package:bloxie/features/game_screen/game_hud.dart';
 import 'package:bloxie/features/game_screen/game_over_overlay.dart';
 import 'package:bloxie/features/game_screen/pause_overlay.dart';
 import 'package:bloxie/features/game_screen/tutorial_overlay.dart';
+import 'package:bloxie/features/levels/bloc/level_progress_cubit.dart';
+import 'package:bloxie/features/levels/level_overlays.dart';
 import 'package:bloxie/features/settings/bloc/settings_cubit.dart';
 import 'package:bloxie/features/shop/bloc/shop_cubit.dart';
 import 'package:bloxie/features/stats/bloc/stats_cubit.dart';
 import 'package:bloxie/features/wallet/bloc/wallet_cubit.dart';
 import 'package:bloxie/game/block_game.dart';
+import 'package:bloxie/game/levels/level_spec.dart';
+import 'package:bloxie/game/levels/levels_catalog.dart';
 import 'package:bloxie/game/logic/game_session.dart';
 import 'package:bloxie/services/ads/ad_service.dart';
 import 'package:bloxie/services/analytics/analytics_service.dart';
@@ -23,7 +27,12 @@ import 'package:flame/game.dart';
 import 'package:material_ui/material_ui.dart';
 
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+  const GameScreen({this.level, super.key});
+
+  /// Level mode: goals, move limits and prefills come from [spec].
+  GameScreen.level(LevelSpec spec, {super.key}) : level = spec;
+
+  final LevelSpec? level;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -35,22 +44,44 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late DateTime _startedAt;
 
   GameState? _over;
+  LevelResult? _levelResult;
   bool _isPaused = false;
   bool _isBusy = false;
   bool _isFinalized = false;
+
+  /// Level mode: stats are recorded once per run, even across revives.
+  bool _levelStatsRecorded = false;
   bool _showTutorial = false;
+  bool _showIntro = false;
+
+  bool get _isLevelMode => widget.level != null;
 
   @override
   void initState() {
     super.initState();
     final skin = Skins.byId(sl<ShopCubit>().state.selectedId);
-    _game = BlockGame(
-      skin: skin,
-      audio: sl<AudioService>(),
-      haptics: sl<HapticsService>(),
-      onGameOver: _handleGameOver,
-      reduceMotion: sl<SettingsCubit>().state.reduceMotion,
-    );
+    final level = widget.level;
+    if (level != null) {
+      _game = BlockGame.level(
+        level: level,
+        skin: skin,
+        audio: sl<AudioService>(),
+        haptics: sl<HapticsService>(),
+        onLevelEnd: _handleLevelEnd,
+        reduceMotion: sl<SettingsCubit>().state.reduceMotion,
+      );
+      _showIntro = true;
+      // Hold the engine until the intro card's START button is pressed.
+      _game.pauseGame();
+    } else {
+      _game = BlockGame(
+        skin: skin,
+        audio: sl<AudioService>(),
+        haptics: sl<HapticsService>(),
+        onGameOver: _handleGameOver,
+        reduceMotion: sl<SettingsCubit>().state.reduceMotion,
+      );
+    }
     _showTutorial = !sl<PrefsRepository>().tutorialSeen;
     WidgetsBinding.instance.addObserver(this);
     _beginRun();
@@ -63,7 +94,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden;
-    if (isHidden && !_isPaused && _over == null && !_isBusy && !_showTutorial) {
+    if (isHidden &&
+        !_isPaused &&
+        _over == null &&
+        _levelResult == null &&
+        !_isBusy &&
+        !_showTutorial &&
+        !_showIntro) {
       _pause();
     }
   }
@@ -77,6 +114,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _startedAt = DateTime.now();
     _bestAtStart = sl<StatsCubit>().state.bestScore;
     _isFinalized = false;
+    _levelStatsRecorded = false;
     unawaited(sl<AnalyticsService>().gameStart());
   }
 
@@ -100,10 +138,42 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     setState(() => _over = state);
   }
 
+  /// Level end (win or loss). Saves progress and coins exactly once.
+  /// A loss may be revived and end again; a win always ends the run.
+  void _handleLevelEnd(LevelResult result) {
+    if (!mounted) return;
+    if (!_levelStatsRecorded && (result.won || !_canReviveLevel)) {
+      _recordLevelStats(result);
+    }
+    if (result.won) {
+      unawaited(sl<LevelProgressCubit>().completeLevel(result));
+      final coins =
+          EconomyConstants.levelStarCoins[(result.stars - 1).clamp(0, 2)];
+      unawaited(sl<WalletCubit>().addCoins(coins));
+    }
+    setState(() => _levelResult = result);
+  }
+
+  bool get _canReviveLevel =>
+      (widget.level?.reviveAllowed ?? false) &&
+      _game.session.state.isGameOver &&
+      !_game.session.state.reviveUsed;
+
+  void _recordLevelStats(LevelResult result) {
+    _levelStatsRecorded = true;
+    unawaited(
+      sl<StatsCubit>().recordGame(
+        score: result.score,
+        lines: result.linesCleared,
+      ),
+    );
+  }
+
   /// Records stats and coins exactly once per run, after any revive.
+  /// Classic mode only; level mode saves inside [_handleLevelEnd].
   Future<void> _finalize() async {
     final over = _over;
-    if (_isFinalized || over == null) return;
+    if (_isFinalized || over == null || _isLevelMode) return;
     _isFinalized = true;
     await sl<StatsCubit>().recordGame(
       score: over.score,
@@ -137,6 +207,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (earned && _game.revive()) {
       setState(() {
         _over = null;
+        _levelResult = null;
         _isBusy = false;
       });
       return;
@@ -145,28 +216,65 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     showSnack(context, 'No ad available right now. Try again later.');
   }
 
+  /// Records a pending level loss the player chose not to revive.
+  void _flushLevelLoss() {
+    final r = _levelResult;
+    if (_isLevelMode && r != null && !r.won && !_levelStatsRecorded) {
+      _recordLevelStats(r);
+    }
+  }
+
+  /// Classic: new endless run. Level mode: retry the same level.
   Future<void> _playAgain() async {
+    _flushLevelLoss();
     await _finalize();
-    // Interstitials only appear here, between games, never mid-play.
     setState(() => _isBusy = true);
-    await sl<AdService>().maybeShowInterstitial();
-    if (!mounted) return;
+    if (!_isLevelMode) {
+      // Interstitials only appear here, between games, never mid-play.
+      await sl<AdService>().maybeShowInterstitial();
+      if (!mounted) return;
+    }
     _game.restart();
     _beginRun();
     setState(() {
       _over = null;
+      _levelResult = null;
       _isPaused = false;
       _isBusy = false;
     });
   }
 
+  /// Pops this screen and opens the next level (level mode, win only).
+  void _nextLevel() {
+    final next = widget.level!.id + 1;
+    if (next > LevelsCatalog.count) {
+      Navigator.of(context).pop();
+      return;
+    }
+    Navigator.of(context).pushReplacement<void, void>(
+      MaterialPageRoute<void>(
+        builder: (_) => GameScreen.level(LevelsCatalog.byId(next)),
+      ),
+    );
+  }
+
   Future<void> _goHome() async {
+    _flushLevelLoss();
+    if (_isLevelMode) {
+      Navigator.of(context).pop();
+      return;
+    }
     await _finalize();
     if (_over != null) {
       setState(() => _isBusy = true);
       await sl<AdService>().maybeShowInterstitial();
     }
     if (mounted) Navigator.of(context).pop();
+  }
+
+  void _startLevel() {
+    _game.resumeGame();
+    setState(() => _showIntro = false);
   }
 
   void _pause() {
@@ -183,11 +291,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final skin = _game.skin;
     final over = _over;
+    final levelResult = _levelResult;
+    final level = widget.level;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
-        if (over != null) {
+        if (over != null || levelResult != null) {
           unawaited(_goHome());
         } else if (!_isPaused) {
           _pause();
@@ -212,6 +322,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                       bestScore: _bestAtStart,
                       onPause: _pause,
                       onUndo: _undo,
+                      goalText: level?.goalText,
+                      showUndo: level?.undoAllowed ?? true,
                     ),
                     Expanded(
                       child: RepaintBoundary(
@@ -224,13 +336,41 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                   Positioned.fill(
                     child: TutorialOverlay(onDone: _dismissTutorial),
                   ),
+                if (_showIntro && level != null)
+                  Positioned.fill(
+                    child: LevelIntroOverlay(spec: level, onStart: _startLevel),
+                  ),
                 if (_isPaused)
                   Positioned.fill(
                     child: PauseOverlay(
                       onResume: _resume,
-                      onRestart: _playAgain,
-                      onHome: _goHome,
+                      onRestart: () => unawaited(_playAgain()),
+                      onHome: () => unawaited(_goHome()),
                     ),
+                  ),
+                if (levelResult != null && level != null)
+                  Positioned.fill(
+                    child: levelResult.won
+                        ? LevelCompleteOverlay(
+                            result: levelResult,
+                            coinsEarned: EconomyConstants
+                                .levelStarCoins[(levelResult.stars - 1)
+                                    .clamp(0, 2)],
+                            hasNextLevel:
+                                levelResult.levelId < LevelsCatalog.count,
+                            isBusy: _isBusy,
+                            onNext: _nextLevel,
+                            onReplay: () => unawaited(_playAgain()),
+                            onLevels: () => unawaited(_goHome()),
+                          )
+                        : LevelFailedOverlay(
+                            result: levelResult,
+                            canRevive: _canReviveLevel,
+                            isBusy: _isBusy,
+                            onRevive: () => unawaited(_revive()),
+                            onRetry: () => unawaited(_playAgain()),
+                            onLevels: () => unawaited(_goHome()),
+                          ),
                   ),
                 if (over != null)
                   Positioned.fill(
@@ -243,9 +383,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                       coinsEarned: over.score ~/ EconomyConstants.scorePerCoin,
                       canRevive: !over.reviveUsed,
                       isBusy: _isBusy,
-                      onRevive: _revive,
-                      onPlayAgain: _playAgain,
-                      onHome: _goHome,
+                      onRevive: () => unawaited(_revive()),
+                      onPlayAgain: () => unawaited(_playAgain()),
+                      onHome: () => unawaited(_goHome()),
                     ),
                   ),
               ],

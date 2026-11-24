@@ -65,4 +65,31 @@ class PrefsRepository {
 
   int get dailyStreak => _prefs.getInt(_streak) ?? 0;
   Future<void> setDailyStreak(int v) => _prefs.setInt(_streak, v);
+
+  static const _unlockedLevel = 'highest_unlocked_level';
+  static const _levelStars = 'level_stars';
+
+  /// Highest level id available to play (1-based). Level 1 is always open.
+  int get highestUnlockedLevel => _prefs.getInt(_unlockedLevel) ?? 1;
+  Future<void> setHighestUnlockedLevel(int v) =>
+      _prefs.setInt(_unlockedLevel, v);
+
+  /// Best star count per level id, stored as 'id:stars' entries.
+  Map<int, int> get levelStars {
+    final out = <int, int>{};
+    for (final entry in _prefs.getStringList(_levelStars) ?? const <String>[]) {
+      final parts = entry.split(':');
+      if (parts.length == 2) {
+        final id = int.tryParse(parts[0]);
+        final stars = int.tryParse(parts[1]);
+        if (id != null && stars != null) out[id] = stars;
+      }
+    }
+    return out;
+  }
+
+  Future<void> setLevelStars(Map<int, int> v) => _prefs.setStringList(
+    _levelStars,
+    [for (final e in v.entries) '${e.key}:${e.value}']..sort(),
+  );
 }

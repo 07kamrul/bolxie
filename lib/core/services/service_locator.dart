@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:bloxie/features/daily_reward/bloc/daily_reward_cubit.dart';
+import 'package:bloxie/features/levels/bloc/level_progress_cubit.dart';
 import 'package:bloxie/features/settings/bloc/settings_cubit.dart';
 import 'package:bloxie/features/shop/bloc/shop_cubit.dart';
 import 'package:bloxie/features/stats/bloc/stats_cubit.dart';
@@ -37,6 +38,7 @@ Future<void> setupServices() async {
     ..registerSingleton<IapService>(iap)
     ..registerSingleton<PurchaseCubit>(purchase)
     ..registerSingleton<StatsCubit>(StatsCubit(prefs))
+    ..registerSingleton<LevelProgressCubit>(LevelProgressCubit(prefs))
     ..registerSingleton<ShopCubit>(
       ShopCubit(prefs: prefs, wallet: wallet, analytics: analytics),
     )

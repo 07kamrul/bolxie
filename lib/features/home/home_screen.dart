@@ -5,6 +5,7 @@ import 'package:bloxie/features/common/gradient_scaffold.dart';
 import 'package:bloxie/features/daily_reward/bloc/daily_reward_cubit.dart';
 import 'package:bloxie/features/daily_reward/daily_reward_sheet.dart';
 import 'package:bloxie/features/game_screen/game_screen.dart';
+import 'package:bloxie/features/levels/level_select_screen.dart';
 import 'package:bloxie/features/settings/settings_screen.dart';
 import 'package:bloxie/features/shop/shop_screen.dart';
 import 'package:bloxie/features/stats/bloc/stats_cubit.dart';
@@ -54,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           final title = _Title(best: best, isCompact: isCompact || isWide);
           final menu = _Menu(
             onPlay: () => _push(const GameScreen()),
+            onLevels: () => _push(const LevelSelectScreen()),
             onPush: _push,
           );
           return Padding(
@@ -139,9 +141,10 @@ class _Title extends StatelessWidget {
 }
 
 class _Menu extends StatelessWidget {
-  const _Menu({required this.onPlay, required this.onPush});
+  const _Menu({required this.onPlay, required this.onLevels, required this.onPush});
 
   final VoidCallback onPlay;
+  final VoidCallback onLevels;
   final void Function(Widget screen) onPush;
 
   @override
@@ -154,7 +157,13 @@ class _Menu extends StatelessWidget {
           icon: const Icon(Icons.play_arrow_rounded, size: 30),
           label: const Text('PLAY'),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 12),
+        FilledButton.tonalIcon(
+          onPressed: onLevels,
+          icon: const Icon(Icons.grid_view_rounded, size: 26),
+          label: const Text('LEVELS'),
+        ),
+        const SizedBox(height: 24),
         Wrap(
           alignment: WrapAlignment.center,
           spacing: 20,

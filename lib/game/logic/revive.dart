@@ -13,12 +13,21 @@ abstract final class Revive {
       for (var c = col; c < col + _size; c++) BoardState.indexOf(r, c),
   ];
 
+  /// Clears the area but leaves stone (blocker) cells: those only go away
+  /// when their line is cleared, so a revive never advances a stone goal.
   static BoardState apply(BoardState board, int row, int col) =>
-      board.withCells(_areaIndices(row, col), 0);
+      board.withCells(_clearableIn(board, row, col), 0);
+
+  static List<int> _clearableIn(BoardState board, int row, int col) => [
+    for (final i in _areaIndices(row, col))
+      if (board.at(i ~/ GameConstants.gridSize, i % GameConstants.gridSize) !=
+          BoardState.blockerValue)
+        i,
+  ];
 
   static int _filledIn(BoardState board, int row, int col) {
     var n = 0;
-    for (final i in _areaIndices(row, col)) {
+    for (final i in _clearableIn(board, row, col)) {
       if (board.at(i ~/ GameConstants.gridSize, i % GameConstants.gridSize) !=
           0) {
         n++;

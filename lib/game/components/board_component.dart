@@ -163,7 +163,7 @@ class BoardComponent extends Component {
           final b = _bounce[i];
           // sin gives a quick overshoot-and-settle pop.
           final scale = b > 0 ? 1 + 0.18 * _sinPop(b) : 1.0;
-          painter.drawBlock(canvas, x, y, value - 1, scale: scale);
+          painter.drawCell(canvas, x, y, value - 1, scale: scale);
         }
       }
     }
@@ -187,7 +187,7 @@ class BoardComponent extends Component {
       final scale = p < 0.25
           ? 1 + 0.12 * (p / 0.25)
           : 1.12 * (1 - (p - 0.25) / 0.75);
-      painter.drawBlock(canvas, x, y, _clearColor[i], scale: scale);
+      painter.drawCell(canvas, x, y, _clearColor[i], scale: scale);
       final flash = (1 - p / 0.45).clamp(0.0, 1.0);
       if (flash > 0) {
         painter.drawFlash(

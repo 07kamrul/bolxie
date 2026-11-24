@@ -8,6 +8,8 @@ class GameHud extends StatelessWidget {
     required this.bestScore,
     required this.onPause,
     required this.onUndo,
+    this.goalText,
+    this.showUndo = true,
     super.key,
   });
 
@@ -15,6 +17,14 @@ class GameHud extends StatelessWidget {
   final int bestScore;
   final VoidCallback onPause;
   final VoidCallback onUndo;
+
+  /// Level mode: shows the goal and remaining moves instead of BEST.
+  final String? goalText;
+
+  /// Level mode can disable undo entirely.
+  final bool showUndo;
+
+  bool get _isLevelMode => goalText != null;
 
   static const Duration _countUp = Duration(milliseconds: 350);
 
@@ -66,22 +76,40 @@ class GameHud extends StatelessWidget {
                         ),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
-                          child: Text(
-                            isNewBest
-                                ? 'NEW BEST!'
-                                : 'BEST ${bestScore > score ? bestScore : score}',
-                            key: ValueKey(isNewBest),
-                            style: TextStyle(
-                              fontSize: 12,
-                              letterSpacing: 1.5,
-                              fontWeight: isNewBest
-                                  ? FontWeight.w900
-                                  : FontWeight.normal,
-                              color: isNewBest
-                                  ? const Color(0xFFFFD43B)
-                                  : Colors.white70,
-                            ),
-                          ),
+                          child: _isLevelMode
+                              ? ValueListenableBuilder<int>(
+                                  valueListenable: game.goalProgress,
+                                  builder: (_, progress, __) => ValueListenableBuilder<
+                                      int?>(
+                                    valueListenable: game.movesLeft,
+                                    builder: (_, moves, ___) => Text(
+                                      '$goalText · MOVES ${moves ?? '∞'}',
+                                      key: const ValueKey('goal'),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        letterSpacing: 1.2,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xFF4DB8FF),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  isNewBest
+                                      ? 'NEW BEST!'
+                                      : 'BEST ${bestScore > score ? bestScore : score}',
+                                  key: ValueKey(isNewBest),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    letterSpacing: 1.5,
+                                    fontWeight: isNewBest
+                                        ? FontWeight.w900
+                                        : FontWeight.normal,
+                                    color: isNewBest
+                                        ? const Color(0xFFFFD43B)
+                                        : Colors.white70,
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -107,13 +135,13 @@ class GameHud extends StatelessWidget {
             ValueListenableBuilder<bool>(
               valueListenable: game.canUndo,
               builder: (_, canUndo, __) => IconButton(
-                onPressed: canUndo ? onUndo : null,
+                onPressed: showUndo && canUndo ? onUndo : null,
                 iconSize: iconSize - 4,
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
                 tooltip: 'Undo (watch ad)',
                 icon: Badge(
                   label: const Icon(Icons.play_arrow, size: 10),
-                  isLabelVisible: canUndo,
+                  isLabelVisible: showUndo && canUndo,
                   child: const Icon(Icons.undo_rounded),
                 ),
               ),

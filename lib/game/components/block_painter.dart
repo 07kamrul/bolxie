@@ -28,6 +28,20 @@ class BlockPainter {
     _highlightPaint = Paint()..color = const Color(0x33FFFFFF);
     _ghostPaint = Paint()..color = skin.accent.withValues(alpha: 0.38);
     _overlay = Paint();
+    _stonePaint = Paint()..color = const Color(0xFF6B6F7A);
+    _crackPaint = Paint()
+      ..color = const Color(0xFF3A3D45)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = cell * 0.06
+      ..strokeCap = StrokeCap.round;
+    final s = cell;
+    _crack = Path()
+      ..moveTo(s * 0.30, s * 0.22)
+      ..lineTo(s * 0.48, s * 0.46)
+      ..lineTo(s * 0.38, s * 0.62)
+      ..moveTo(s * 0.48, s * 0.46)
+      ..lineTo(s * 0.72, s * 0.58)
+      ..lineTo(s * 0.66, s * 0.78);
   }
 
   final double cell;
@@ -38,6 +52,12 @@ class BlockPainter {
   late final Paint _highlightPaint;
   late final Paint _ghostPaint;
   late final Paint _overlay;
+  late final Paint _stonePaint;
+  late final Paint _crackPaint;
+  late final Path _crack;
+
+  /// Color index used for stone (blocker) cells; see BoardState.blockerValue.
+  static const int stoneIndex = 98;
 
   void _enter(Canvas canvas, double x, double y, double scale) {
     canvas.save();
@@ -63,6 +83,29 @@ class BlockPainter {
     canvas.drawRRect(_rrect, _fills[colorIndex % _fills.length]);
     canvas.drawRRect(_highlight, _highlightPaint);
     canvas.restore();
+  }
+
+  /// Grey cracked stone for blocker cells.
+  void drawStone(Canvas canvas, double x, double y, {double scale = 1}) {
+    _enter(canvas, x, y, scale);
+    canvas.drawRRect(_rrect, _stonePaint);
+    canvas.drawPath(_crack, _crackPaint);
+    canvas.restore();
+  }
+
+  /// Draws [colorIndex], routing [stoneIndex] to [drawStone].
+  void drawCell(
+    Canvas canvas,
+    double x,
+    double y,
+    int colorIndex, {
+    double scale = 1,
+  }) {
+    if (colorIndex == stoneIndex) {
+      drawStone(canvas, x, y, scale: scale);
+    } else {
+      drawBlock(canvas, x, y, colorIndex, scale: scale);
+    }
   }
 
   void drawGhost(Canvas canvas, double x, double y) {

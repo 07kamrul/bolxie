@@ -10,6 +10,7 @@ import 'package:bloxie/game/components/particle_system.dart';
 import 'package:bloxie/game/components/popup_layer.dart';
 import 'package:bloxie/game/components/tray_piece.dart';
 import 'package:bloxie/game/game_layout.dart';
+import 'package:bloxie/game/levels/level_spec.dart';
 import 'package:bloxie/game/logic/board_state.dart';
 import 'package:bloxie/game/logic/game_session.dart';
 import 'package:bloxie/game/logic/scoring.dart';
@@ -29,9 +30,21 @@ class BlockGame extends FlameGame {
     required this.audio,
     required this.haptics,
     this.onGameOver,
+    this.onLevelEnd,
     this.reduceMotion = false,
     Spawner? spawner,
   }) : session = GameSession(spawner: spawner ?? Spawner());
+
+  /// Creates a level-mode game driven by [level]'s spec.
+  BlockGame.level({
+    required LevelSpec level,
+    required this.skin,
+    required this.audio,
+    required this.haptics,
+    this.onGameOver,
+    this.onLevelEnd,
+    this.reduceMotion = false,
+  }) : session = GameSession.level(level);
 
   final GameSkin skin;
   final AudioService audio;
@@ -44,9 +57,14 @@ class BlockGame extends FlameGame {
   /// Called once per game over, after the final clear animation has played.
   void Function(GameState state)? onGameOver;
 
+  /// Called once when a level is won or lost (level mode only).
+  void Function(LevelResult result)? onLevelEnd;
+
   final ValueNotifier<int> score = ValueNotifier(0);
   final ValueNotifier<int> combo = ValueNotifier(0);
   final ValueNotifier<bool> canUndo = ValueNotifier(false);
+  final ValueNotifier<int?> movesLeft = ValueNotifier(null);
+  final ValueNotifier<int> goalProgress = ValueNotifier(0);
 
   GameLayout layout = GameLayout(0, 0);
   late BlockPainter painter = BlockPainter(cell: 1, skin: skin);
@@ -60,6 +78,16 @@ class BlockGame extends FlameGame {
   static const double _smallShakeAmplitude = 5;
 
   bool _userPaused = false;
+  bool _levelFinished = false;
+
+  /// When set, the game-over countdown fires the level-end callback with a
+  /// loss instead of the classic game-over callback.
+  bool _failAtCountdown = false;
+
+  /// Win waiting for its short celebration delay; driven by update().
+  LevelResult? _pendingWin;
+  double _winCountdown = -1;
+  static const double _levelWinDelaySeconds = 0.6;
   double _gameOverCountdown = -1;
   double _shakeLeft = 0;
   double _shakeAmplitude = 0;
@@ -67,7 +95,10 @@ class BlockGame extends FlameGame {
   int get _particleCount => reduceMotion ? 1 : GameConstants.particlesPerCell;
 
   bool get isInteractive =>
-      !_userPaused && _gameOverCountdown < 0 && !session.state.isGameOver;
+      !_userPaused &&
+      _gameOverCountdown < 0 &&
+      !_levelFinished &&
+      !session.state.isGameOver;
 
   @override
   Color backgroundColor() => skin.bgBottom;
@@ -108,6 +139,8 @@ class BlockGame extends FlameGame {
     score.value = s.score;
     combo.value = s.combo;
     canUndo.value = session.canUndo;
+    movesLeft.value = s.movesLeft;
+    goalProgress.value = session.goalProgress;
   }
 
   void setGhost(ShapeDef? shape, int row, int col) =>
@@ -122,6 +155,25 @@ class BlockGame extends FlameGame {
     haptics.light();
     if (!outcome.cleared.isEmpty) _playClear(outcome);
     _syncNotifiers();
+
+    final levelResult = outcome.levelResult;
+    if (levelResult != null) {
+      _levelFinished = true;
+      if (levelResult.won) {
+        audio.play(Sfx.combo);
+        haptics.heavy();
+        // Fired from update() so pausing also holds the win screen.
+        _pendingWin = levelResult;
+        _winCountdown = _levelWinDelaySeconds;
+      } else {
+        // Failed (out of moves or no fits): reuse the game-over flow.
+        _gameOverCountdown = outcome.cleared.isEmpty
+            ? 0.35
+            : _gameOverDelaySeconds;
+        _failAtCountdown = true;
+      }
+      return true;
+    }
     if (session.state.isGameOver) {
       _gameOverCountdown = outcome.cleared.isEmpty
           ? 0.35
@@ -199,7 +251,7 @@ class BlockGame extends FlameGame {
   }
 
   bool undo() {
-    if (!session.undo()) return false;
+    if (_levelFinished || !session.undo()) return false;
     _board?.resetAnimations();
     _gameOverCountdown = -1;
     _syncNotifiers();
@@ -211,12 +263,14 @@ class BlockGame extends FlameGame {
     final before = session.state.board;
     final area = session.revive();
     if (area == null) return false;
+    _levelFinished = false;
     final (r0, c0) = area;
     final indices = <int>[];
     final colors = <int>[];
     for (var r = r0; r < r0 + GameConstants.reviveAreaSize; r++) {
       for (var c = c0; c < c0 + GameConstants.reviveAreaSize; c++) {
-        if (before.isFilled(r, c)) {
+        final v = before.at(r, c);
+        if (v != 0 && v != BoardState.blockerValue) {
           indices.add(BoardState.indexOf(r, c));
           colors.add(before.at(r, c));
           _particles.burst(
@@ -240,6 +294,10 @@ class BlockGame extends FlameGame {
     session.start();
     _board?.resetAnimations();
     _gameOverCountdown = -1;
+    _levelFinished = false;
+    _failAtCountdown = false;
+    _pendingWin = null;
+    _winCountdown = -1;
     _shakeLeft = 0;
     _syncNotifiers();
     resumeIfPaused();
@@ -263,6 +321,14 @@ class BlockGame extends FlameGame {
   void update(double dt) {
     super.update(dt);
     if (_shakeLeft > 0) _shakeLeft = max(0, _shakeLeft - dt);
+    final win = _pendingWin;
+    if (win != null && _winCountdown >= 0) {
+      _winCountdown -= dt;
+      if (_winCountdown < 0) {
+        _pendingWin = null;
+        onLevelEnd?.call(win);
+      }
+    }
     if (_gameOverCountdown >= 0) {
       _gameOverCountdown -= dt;
       if (_gameOverCountdown < 0) {
@@ -270,7 +336,22 @@ class BlockGame extends FlameGame {
         // which is still game over until revive/restart.
         audio.play(Sfx.gameOver);
         haptics.heavy();
-        onGameOver?.call(session.state);
+        if (_failAtCountdown) {
+          _failAtCountdown = false;
+          final level = session.level!;
+          onLevelEnd?.call(
+            LevelResult(
+              levelId: level.id,
+              won: false,
+              stars: 0,
+              score: session.state.score,
+              linesCleared: session.state.linesCleared,
+              movesUsed: session.state.moves,
+            ),
+          );
+        } else {
+          onGameOver?.call(session.state);
+        }
       }
     }
   }

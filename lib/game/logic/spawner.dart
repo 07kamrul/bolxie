@@ -9,9 +9,13 @@ import 'package:bloxie/game/logic/shapes_catalog.dart';
 /// Deals trays of shapes with a fairness guarantee: if any shape can still be
 /// placed on the board, at least one tray entry is placeable.
 class Spawner {
-  Spawner({Random? random, List<ShapeDef>? catalog})
+  Spawner({Random? random, List<ShapeDef>? catalog, this.bigShapeBias = 0})
     : _random = random ?? Random(),
       _catalog = catalog ?? ShapesCatalog.all;
+
+  /// 0.0–1.0 extra weight factor for big shapes, independent of score.
+  /// Level mode sets this from the level spec; classic mode uses 0.
+  final double bigShapeBias;
 
   final Random _random;
   final List<ShapeDef> _catalog;
@@ -44,9 +48,11 @@ class Spawner {
     return tray;
   }
 
-  /// Big shapes get slightly heavier as the score grows.
+  /// Big shapes get slightly heavier as the score grows, plus any constant
+  /// [bigShapeBias] configured for level mode.
   List<int> _weightsFor(int score) {
-    final bonus = min(score, _difficultyScoreCap) * 100 ~/ _difficultyScoreCap;
+    final scoreBonus = min(score, _difficultyScoreCap) * 100 ~/ _difficultyScoreCap;
+    final bonus = scoreBonus + (bigShapeBias * 100).round();
     return [
       for (final s in _catalog)
         s.cellCount >= _bigShapeCells
