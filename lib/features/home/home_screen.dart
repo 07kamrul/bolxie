@@ -1,5 +1,6 @@
 import 'package:bloxie/core/services/service_locator.dart';
 import 'package:bloxie/core/theme/breakpoints.dart';
+import 'package:bloxie/features/common/brand_logo.dart';
 import 'package:bloxie/features/common/coin_chip.dart';
 import 'package:bloxie/features/common/gradient_scaffold.dart';
 import 'package:bloxie/features/daily_reward/bloc/daily_reward_cubit.dart';
@@ -113,6 +114,8 @@ class _Title extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        BrandLogo(size: isCompact ? 88 : 128),
+        const SizedBox(height: 12),
         ShaderMask(
           shaderCallback: (r) => const LinearGradient(
             colors: [Color(0xFFFF5C8A), Color(0xFFFFB84D), Color(0xFF4DB8FF)],
