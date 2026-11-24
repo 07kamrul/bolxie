@@ -15,8 +15,9 @@ void main() {
     expect(image.height, 96);
   });
 
-  testWidgets('is excluded from semantics because it is decorative',
-      (tester) async {
+  testWidgets('is excluded from semantics because it is decorative', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: BrandLogo(size: 96))),
     );

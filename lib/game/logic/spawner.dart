@@ -51,7 +51,8 @@ class Spawner {
   /// Big shapes get slightly heavier as the score grows, plus any constant
   /// [bigShapeBias] configured for level mode.
   List<int> _weightsFor(int score) {
-    final scoreBonus = min(score, _difficultyScoreCap) * 100 ~/ _difficultyScoreCap;
+    final scoreBonus =
+        min(score, _difficultyScoreCap) * 100 ~/ _difficultyScoreCap;
     final bonus = scoreBonus + (bigShapeBias * 100).round();
     return [
       for (final s in _catalog)

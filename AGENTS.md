@@ -4,9 +4,10 @@ Guidance for AI coding agents working on this repository.
 
 ## Project
 
-Bloxie is an 8×8 block-puzzle game for Android and iOS built with Flutter and
-Flame. No backend: scores, coins, themes and settings live on-device in
-`shared_preferences`. Package name is `bloxie` (see `pubspec.yaml`).
+Bloxie is an 8×8 block-puzzle game for Android and iOS, plus a browser build
+sold on itch.io, built with Flutter and Flame. No backend: scores, coins,
+themes and settings live on-device in `shared_preferences` (browser
+localStorage on web). Package name is `bloxie` (see `pubspec.yaml`).
 
 **Stack:** Flutter (Dart ^3.14), Flame + flame_audio (game), flutter_bloc +
 equatable (state), get_it (DI), shared_preferences, google_mobile_ads,
@@ -22,6 +23,7 @@ flutter test             # unit tests (must pass before finishing)
 flutter test --coverage
 flutter run              # on a connected device/emulator
 flutter build appbundle --release   # release AAB (needs android/key.properties)
+powershell -File tool/build_web.ps1 # browser build -> dist/bloxie-web.zip (itch.io)
 ```
 
 Branding/assets:
@@ -72,6 +74,19 @@ android/ ios/     platform shells     store/    Play Store assets
 - **Ads:** test unit IDs only in `ad_config.dart` debug paths; never hardcode
   real AdMob IDs outside that file. No secrets in source — signing keys live in
   gitignored `android/key.properties`.
+
+## Web / itch.io
+
+- Platform detection goes through `lib/core/platform/platform_info.dart`
+  (`PlatformInfo.isMobile` / `isWeb`), never raw `dart:io` `Platform` — it
+  throws on web.
+- Web uses `FreeRewardAdService` (rewarded actions free with a cooldown, see
+  `AdConfig.freeRewardCooldowns`, one per placement, persisted via `PrefsRepository`) and `NoopIapService`; the settings screen
+  hides the purchase section on web.
+- `tool/build_web.ps1` builds `build/web` (patching `<base href>` to `./`,
+  required because itch.io serves from a subpath) and zips it to
+  `dist/bloxie-web.zip`. Upload that to itch.io: Kind = HTML, "played in the
+  browser", viewport ~480×854, fullscreen button on.
 
 ## Testing
 

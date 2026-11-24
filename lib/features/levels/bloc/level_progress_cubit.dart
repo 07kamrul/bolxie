@@ -43,9 +43,7 @@ class LevelProgressCubit extends Cubit<LevelProgressState> {
     final nextUnlocked = result.levelId + 1 > state.highestUnlocked
         ? result.levelId + 1
         : state.highestUnlocked;
-    emit(
-      LevelProgressState(highestUnlocked: nextUnlocked, stars: nextStars),
-    );
+    emit(LevelProgressState(highestUnlocked: nextUnlocked, stars: nextStars));
     await _prefs.setHighestUnlockedLevel(nextUnlocked);
     if (improved) await _prefs.setLevelStars(nextStars);
     return improved;

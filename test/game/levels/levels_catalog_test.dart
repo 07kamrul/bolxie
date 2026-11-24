@@ -40,11 +40,7 @@ void main() {
   test('prefills are 8x8 grids with legal chars', () {
     for (final level in LevelsCatalog.all) {
       for (final row in level.prefill) {
-        expect(
-          row.length,
-          GameConstants.gridSize,
-          reason: 'level ${level.id}',
-        );
+        expect(row.length, GameConstants.gridSize, reason: 'level ${level.id}');
         expect(row, matches(RegExp(r'^[.XB]+$')), reason: 'level ${level.id}');
       }
     }

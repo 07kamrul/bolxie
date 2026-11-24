@@ -41,8 +41,13 @@ void main() {
       starThresholds: [1, 2, 3],
       prefill: [
         'BXXXXXXX',
-        '........', '........', '........',
-        '........', '........', '........', '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
       ],
     ).buildBoard();
     final lines = LineClear.find(board);
@@ -92,7 +97,11 @@ void main() {
       'XXX.....',
       'XBX.....',
       'XXX.....',
-      '........', '........', '........', '........', '........',
+      '........',
+      '........',
+      '........',
+      '........',
+      '........',
     ]).withCells([BoardState.indexOf(1, 1)], BoardState.blockerValue);
     final after = Revive.apply(board, 0, 0);
     expect(after.blockerCount, 1);

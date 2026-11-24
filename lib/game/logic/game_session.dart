@@ -197,11 +197,23 @@ class GameSession {
     if (refilled) tray = _spawner.nextTray(board, score: score);
 
     final goalColor = _level?.goal.colorIndex;
-    final colorCleared = _state.colorCellsCleared + (goalColor == null
-        ? 0
-        : [for (final i in clearedIdx) placed.at(i ~/ GameConstants.gridSize, i % GameConstants.gridSize)]
-            .where((v) => v != BoardState.blockerValue && BoardState.colorIndexOf(v) == goalColor)
-            .length);
+    final colorCleared =
+        _state.colorCellsCleared +
+        (goalColor == null
+            ? 0
+            : [
+                    for (final i in clearedIdx)
+                      placed.at(
+                        i ~/ GameConstants.gridSize,
+                        i % GameConstants.gridSize,
+                      ),
+                  ]
+                  .where(
+                    (v) =>
+                        v != BoardState.blockerValue &&
+                        BoardState.colorIndexOf(v) == goalColor,
+                  )
+                  .length);
 
     final movesLeft = _state.movesLeft == null ? null : _state.movesLeft! - 1;
     final newLines = _state.linesCleared + lines.lineCount;
@@ -252,8 +264,7 @@ class GameSession {
     final level = _level;
     if (level == null) return null;
     final won = goalProgress >= level.goal.target;
-    final lost =
-        !won && ((_state.movesLeft ?? 1) <= 0 || _state.isGameOver);
+    final lost = !won && ((_state.movesLeft ?? 1) <= 0 || _state.isGameOver);
     if (!won && !lost) return null;
     return LevelResult(
       levelId: level.id,

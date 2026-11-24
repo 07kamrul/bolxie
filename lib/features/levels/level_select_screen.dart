@@ -38,9 +38,7 @@ class LevelSelectScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
                 children: [
-                  BackButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  BackButton(onPressed: () => Navigator.of(context).pop()),
                   const Expanded(
                     child: Text(
                       'LEVELS',

@@ -1,3 +1,4 @@
+import 'package:bloxie/features/common/reward_labels.dart';
 import 'package:bloxie/features/common/constrained_content.dart';
 import 'package:bloxie/game/levels/level_spec.dart';
 import 'package:material_ui/material_ui.dart';
@@ -200,7 +201,7 @@ class LevelFailedOverlay extends StatelessWidget {
               FilledButton.icon(
                 onPressed: isBusy ? null : onRevive,
                 icon: const Icon(Icons.favorite),
-                label: const Text('REVIVE (AD)'),
+                label: Text(RewardLabels.revive),
               ),
               const SizedBox(height: 12),
             ],

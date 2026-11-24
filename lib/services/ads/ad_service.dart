@@ -22,6 +22,10 @@ abstract interface class AdService {
   /// Shows a rewarded ad. Resolves true only if the reward was earned.
   Future<bool> showRewarded(String placement);
 
+  /// Time until [placement] can be rewarded again. Zero when there is no
+  /// cooldown (ad-backed services rely on ad availability instead).
+  Duration cooldownRemaining(String placement);
+
   /// Call when a game ends so the interstitial schedule advances.
   void recordGameOver();
 
@@ -153,6 +157,9 @@ class AdMobAdService implements AdService {
   }
 
   @override
+  Duration cooldownRemaining(String placement) => Duration.zero;
+
+  @override
   void recordGameOver() => _policy.recordGameOver();
 
   @override
@@ -200,6 +207,8 @@ class NoopAdService implements AdService {
   bool get isRewardedReady => false;
   @override
   Future<bool> showRewarded(String placement) async => false;
+  @override
+  Duration cooldownRemaining(String placement) => Duration.zero;
   @override
   void recordGameOver() {}
   @override

@@ -1,3 +1,4 @@
+import 'package:bloxie/core/platform/platform_info.dart';
 import 'package:bloxie/features/common/constrained_content.dart';
 import 'package:bloxie/features/common/gradient_scaffold.dart';
 import 'package:bloxie/features/common/snack.dart';
@@ -48,47 +49,49 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const Divider(height: 32),
-              BlocBuilder<PurchaseCubit, PurchaseState>(
-                builder: (context, s) => Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.block),
-                      title: const Text('Remove Ads'),
-                      subtitle: Text(
-                        s.adsRemoved
-                            ? 'Purchased. Thank you!'
-                            : s.isStoreAvailable
-                            ? 'One-time purchase'
-                            : 'Store unavailable',
-                      ),
-                      trailing: s.adsRemoved
-                          ? const Icon(
-                              Icons.check_circle,
-                              color: Colors.greenAccent,
-                            )
-                          : FilledButton(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(96, 44),
+              if (!PlatformInfo.isWeb) ...[
+                const Divider(height: 32),
+                BlocBuilder<PurchaseCubit, PurchaseState>(
+                  builder: (context, s) => Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.block),
+                        title: const Text('Remove Ads'),
+                        subtitle: Text(
+                          s.adsRemoved
+                              ? 'Purchased. Thank you!'
+                              : s.isStoreAvailable
+                              ? 'One-time purchase'
+                              : 'Store unavailable',
+                        ),
+                        trailing: s.adsRemoved
+                            ? const Icon(
+                                Icons.check_circle,
+                                color: Colors.greenAccent,
+                              )
+                            : FilledButton(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(96, 44),
+                                ),
+                                onPressed: s.isStoreAvailable && !s.isBusy
+                                    ? () => context
+                                          .read<PurchaseCubit>()
+                                          .buyRemoveAds()
+                                    : null,
+                                child: Text(s.price ?? 'Buy'),
                               ),
-                              onPressed: s.isStoreAvailable && !s.isBusy
-                                  ? () => context
-                                        .read<PurchaseCubit>()
-                                        .buyRemoveAds()
-                                  : null,
-                              child: Text(s.price ?? 'Buy'),
-                            ),
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.restore),
-                      title: const Text('Restore purchases'),
-                      enabled: s.isStoreAvailable && !s.isBusy,
-                      onTap: () => context.read<PurchaseCubit>().restore(),
-                    ),
-                    if (s.isBusy) const LinearProgressIndicator(),
-                  ],
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.restore),
+                        title: const Text('Restore purchases'),
+                        enabled: s.isStoreAvailable && !s.isBusy,
+                        onTap: () => context.read<PurchaseCubit>().restore(),
+                      ),
+                      if (s.isBusy) const LinearProgressIndicator(),
+                    ],
+                  ),
                 ),
-              ),
+              ],
               const SizedBox(height: 24),
               const Center(
                 child: Text(

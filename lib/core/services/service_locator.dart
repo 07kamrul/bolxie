@@ -1,5 +1,4 @@
-import 'dart:io' show Platform;
-
+import 'package:bloxie/core/platform/platform_info.dart';
 import 'package:bloxie/features/daily_reward/bloc/daily_reward_cubit.dart';
 import 'package:bloxie/features/levels/bloc/level_progress_cubit.dart';
 import 'package:bloxie/features/settings/bloc/settings_cubit.dart';
@@ -8,6 +7,7 @@ import 'package:bloxie/features/stats/bloc/stats_cubit.dart';
 import 'package:bloxie/features/wallet/bloc/purchase_cubit.dart';
 import 'package:bloxie/features/wallet/bloc/wallet_cubit.dart';
 import 'package:bloxie/services/ads/ad_service.dart';
+import 'package:bloxie/services/ads/free_reward_ad_service.dart';
 import 'package:bloxie/services/analytics/analytics_service.dart';
 import 'package:bloxie/services/audio/audio_service.dart';
 import 'package:bloxie/services/audio/haptics_service.dart';
@@ -18,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final GetIt sl = GetIt.instance;
 
-bool get _isMobile => Platform.isAndroid || Platform.isIOS;
+bool get _isMobile => PlatformInfo.isMobile;
 
 /// Wires up services and app-level cubits. Call once at startup.
 Future<void> setupServices() async {
@@ -52,7 +52,9 @@ Future<void> setupServices() async {
       AudioService(isEnabled: () => settings.state.soundOn),
     )
     ..registerSingleton<AdService>(
-      _isMobile
+      PlatformInfo.isWeb
+          ? FreeRewardAdService(prefs: prefs)
+          : _isMobile
           ? AdMobAdService(
               analytics: analytics,
               adsRemoved: () => purchase.state.adsRemoved,

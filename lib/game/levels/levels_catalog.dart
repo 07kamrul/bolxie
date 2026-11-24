@@ -5,13 +5,27 @@ import 'package:bloxie/game/levels/level_spec.dart';
 abstract final class LevelsCatalog {
   /// Small shapes only: 1-3 cell bars and the 2x2 square.
   static const List<String> _smallShapes = [
-    'single', 'h2', 'v2', 'h3', 'v3', 'sq2',
+    'single',
+    'h2',
+    'v2',
+    'h3',
+    'v3',
+    'sq2',
   ];
 
   /// Adds the L and T families and 4-long bars.
   static const List<String> _midShapes = [
     ..._smallShapes,
-    'h4', 'v4', 'l0', 'l1', 'l2', 'l3', 't0', 't1', 't2', 't3',
+    'h4',
+    'v4',
+    'l0',
+    'l1',
+    'l2',
+    'l3',
+    't0',
+    't1',
+    't2',
+    't3',
   ];
 
   /// Everything, including 5-long bars, Z/S and the 3x3 square.
@@ -185,9 +199,16 @@ abstract final class LevelsCatalog {
     const w4Stones = [6, 7, 8, 9, 10, 9, 12, 11, 14, 16];
     const w4Moves = [25, 25, 24, 24, 22, 22, 20, 20, 19, 18];
     const w4Prefills = [
-      _blockerCenter, _blockerEdges, _blockerCenter, _blockerEdges,
-      _blockerHeavy, _blockerCenter, _blockerHeavy, _blockerEdges,
-      _blockerHeavy, _blockerHeavy,
+      _blockerCenter,
+      _blockerEdges,
+      _blockerCenter,
+      _blockerEdges,
+      _blockerHeavy,
+      _blockerCenter,
+      _blockerHeavy,
+      _blockerEdges,
+      _blockerHeavy,
+      _blockerHeavy,
     ];
     for (var i = 0; i < 10; i++) {
       final target = w4Stones[i];
@@ -217,47 +238,68 @@ abstract final class LevelsCatalog {
         case 1:
           final target = 16 + i * 2;
           spec = LevelSpec(
-            id: id, world: 5, title: 'Master ${i + 1}',
+            id: id,
+            world: 5,
+            title: 'Master ${i + 1}',
             goal: LevelGoal.clearLines(target),
             starThresholds: [target * 80, target * 120, target * 170],
-            moveLimit: moveLimit, prefill: prefill, bigShapeBias: 0.6,
+            moveLimit: moveLimit,
+            prefill: prefill,
+            bigShapeBias: 0.6,
           );
         case 2:
         case 3:
           final target = 1800 + i * 200;
           spec = LevelSpec(
-            id: id, world: 5, title: 'Master ${i + 1}',
+            id: id,
+            world: 5,
+            title: 'Master ${i + 1}',
             goal: LevelGoal.reachScore(target),
             starThresholds: [target, (target * 1.4).round(), target * 2],
-            moveLimit: moveLimit, prefill: prefill, bigShapeBias: 0.7,
+            moveLimit: moveLimit,
+            prefill: prefill,
+            bigShapeBias: 0.7,
           );
         case 4:
         case 5:
           final target = 17 + i;
           spec = LevelSpec(
-            id: id, world: 5, title: 'Master ${i + 1}',
+            id: id,
+            world: 5,
+            title: 'Master ${i + 1}',
             goal: LevelGoal.clearLines(target),
             starThresholds: [target * 90, target * 135, target * 190],
-            moveLimit: moveLimit, prefill: prefill, bigShapeBias: 0.7,
+            moveLimit: moveLimit,
+            prefill: prefill,
+            bigShapeBias: 0.7,
           );
         case 6:
         case 7:
           final target = 11 + i;
           spec = LevelSpec(
-            id: id, world: 5, title: 'Master ${i + 1}',
+            id: id,
+            world: 5,
+            title: 'Master ${i + 1}',
             goal: LevelGoal.clearColor(target, 3),
             starThresholds: [target * 110, target * 160, target * 220],
-            moveLimit: moveLimit, prefill: prefill,
-            bigShapeBias: 0.7, undoAllowed: false,
+            moveLimit: moveLimit,
+            prefill: prefill,
+            bigShapeBias: 0.7,
+            undoAllowed: false,
           );
         default:
           final target = 20 + (i - 8);
           spec = LevelSpec(
-            id: id, world: 5, title: 'Final Exam ${i - 7}',
+            id: id,
+            world: 5,
+            title: 'Final Exam ${i - 7}',
             goal: LevelGoal.clearLines(target),
             starThresholds: [target * 100, target * 150, target * 210],
-            moveLimit: moveLimit, prefill: prefill,
-            bigShapeBias: 0.8, undoAllowed: false, reviveAllowed: false,
+            moveLimit: moveLimit,
+            prefill: prefill,
+            bigShapeBias: 0.8,
+            undoAllowed: false,
+            reviveAllowed: false,
           );
       }
       levels.add(spec);

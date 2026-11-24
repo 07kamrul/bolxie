@@ -66,6 +66,14 @@ class PrefsRepository {
   int get dailyStreak => _prefs.getInt(_streak) ?? 0;
   Future<void> setDailyStreak(int v) => _prefs.setInt(_streak, v);
 
+  static const _freeRewardPrefix = 'free_reward_last_';
+
+  /// Web build: epoch millis (UTC) of the last free reward for [placement].
+  int? freeRewardLastGrantMs(String placement) =>
+      _prefs.getInt('$_freeRewardPrefix$placement');
+  Future<void> setFreeRewardLastGrantMs(String placement, int ms) =>
+      _prefs.setInt('$_freeRewardPrefix$placement', ms);
+
   static const _unlockedLevel = 'highest_unlocked_level';
   static const _levelStars = 'level_stars';
 

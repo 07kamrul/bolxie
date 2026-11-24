@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloxie/core/constants/economy_constants.dart';
 import 'package:bloxie/core/services/service_locator.dart';
 import 'package:bloxie/core/theme/skins.dart';
+import 'package:bloxie/features/common/reward_labels.dart';
 import 'package:bloxie/features/common/snack.dart';
 import 'package:bloxie/features/game_screen/game_hud.dart';
 import 'package:bloxie/features/game_screen/game_over_overlay.dart';
@@ -194,7 +195,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (earned) {
       _game.undo();
     } else {
-      showSnack(context, 'No ad available right now. Try again later.');
+      showSnack(
+        context,
+        RewardLabels.unavailable(
+          sl<AdService>().cooldownRemaining(AdPlacement.undo),
+        ),
+      );
     }
     setState(() => _isBusy = false);
   }
@@ -213,7 +219,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return;
     }
     setState(() => _isBusy = false);
-    showSnack(context, 'No ad available right now. Try again later.');
+    showSnack(
+      context,
+      RewardLabels.unavailable(
+        sl<AdService>().cooldownRemaining(AdPlacement.revive),
+      ),
+    );
   }
 
   /// Records a pending level loss the player chose not to revive.
@@ -353,8 +364,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                     child: levelResult.won
                         ? LevelCompleteOverlay(
                             result: levelResult,
-                            coinsEarned: EconomyConstants
-                                .levelStarCoins[(levelResult.stars - 1)
+                            coinsEarned:
+                                EconomyConstants
+                                    .levelStarCoins[(levelResult.stars - 1)
                                     .clamp(0, 2)],
                             hasNextLevel:
                                 levelResult.levelId < LevelsCatalog.count,

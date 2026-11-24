@@ -144,7 +144,11 @@ class _Title extends StatelessWidget {
 }
 
 class _Menu extends StatelessWidget {
-  const _Menu({required this.onPlay, required this.onLevels, required this.onPush});
+  const _Menu({
+    required this.onPlay,
+    required this.onLevels,
+    required this.onPush,
+  });
 
   final VoidCallback onPlay;
   final VoidCallback onLevels;

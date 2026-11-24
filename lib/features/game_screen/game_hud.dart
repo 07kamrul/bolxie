@@ -1,3 +1,5 @@
+import 'package:bloxie/core/platform/platform_info.dart';
+import 'package:bloxie/features/common/reward_labels.dart';
 import 'package:bloxie/core/theme/breakpoints.dart';
 import 'package:bloxie/game/block_game.dart';
 import 'package:material_ui/material_ui.dart';
@@ -79,20 +81,20 @@ class GameHud extends StatelessWidget {
                           child: _isLevelMode
                               ? ValueListenableBuilder<int>(
                                   valueListenable: game.goalProgress,
-                                  builder: (_, progress, __) => ValueListenableBuilder<
-                                      int?>(
-                                    valueListenable: game.movesLeft,
-                                    builder: (_, moves, ___) => Text(
-                                      '$goalText · MOVES ${moves ?? '∞'}',
-                                      key: const ValueKey('goal'),
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        letterSpacing: 1.2,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xFF4DB8FF),
+                                  builder: (_, progress, __) =>
+                                      ValueListenableBuilder<int?>(
+                                        valueListenable: game.movesLeft,
+                                        builder: (_, moves, ___) => Text(
+                                          '$goalText · MOVES ${moves ?? '∞'}',
+                                          key: const ValueKey('goal'),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            letterSpacing: 1.2,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xFF4DB8FF),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
                                 )
                               : Text(
                                   isNewBest
@@ -138,10 +140,10 @@ class GameHud extends StatelessWidget {
                 onPressed: showUndo && canUndo ? onUndo : null,
                 iconSize: iconSize - 4,
                 constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                tooltip: 'Undo (watch ad)',
+                tooltip: RewardLabels.undoTooltip,
                 icon: Badge(
                   label: const Icon(Icons.play_arrow, size: 10),
-                  isLabelVisible: showUndo && canUndo,
+                  isLabelVisible: !PlatformInfo.isWeb && showUndo && canUndo,
                   child: const Icon(Icons.undo_rounded),
                 ),
               ),
